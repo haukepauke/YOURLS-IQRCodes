@@ -346,7 +346,9 @@ function iqrcodes_js($context) {
 		echo "<script src=\"".$home."/js/infos.js?v=".YOURLS_VERSION."\" type=\"text/javascript\"></script>\n";
 	} elseif( !preg_match('/plugin.*/', $context[0] )) { 
 		$opt = iqrcodes_get_opts();
-		$loc = yourls_plugin_url(dirname(__FILE__));
+		// The plugin may be installed through a symlink, so derive asset URLs from
+		// its public YOURLS plugin path rather than this file's resolved location.
+		$loc = YOURLS_PLUGINURL . '/iqrcodes';
 		$file = dirname( __FILE__ )."/plugin.php";
 		$data = yourls_get_plugin_data( $file );
 		$v = $data['Version'];
