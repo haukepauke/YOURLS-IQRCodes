@@ -6,7 +6,6 @@ This is an updated fork of [Inline QRCode](http://techlister.com/plugins-2/qrcod
 ## Requires:
 - PHP-GD on your system
 - YOURLS 1.7.9 +  
-- [U-SRV](https://github.com/joshp23/YOURLS-U-SRV) v2.0.0 +
 
 ## Features
 ### Old
@@ -29,7 +28,7 @@ This is an updated fork of [Inline QRCode](http://techlister.com/plugins-2/qrcod
   * Auto-delete or preserve cache on plugin deactivation
 * Scan the entire database at once and generate QR Codes for any short url that is found to be missing one
 * Plenty of well documented, practical examples in the options page to help get started with integration
-* Code links are served using U-SRV, a secure system allowing greater integration
+* QR code images are served directly from the corresponding `.qr` URL
 * Updated and minimized md5.js
 * Streamlined version of the QR Code generation library
 * Almost 1/2 the size of its predecessor
@@ -37,30 +36,20 @@ This is an updated fork of [Inline QRCode](http://techlister.com/plugins-2/qrcod
 * Append `.qr` to any short url to display qr code
 
 ## Installation
-1. Download and install YOURLS and U-SRV. U-SRV will have created it's cache, within which will sit the IQRCodes's cache.
+1. Download and install YOURLS.
 2. Download the [latest release](https://github.com/joshp23/YOURLS-IQRCodes/releases/latest) of this repo and extract the `iqrcodes` folder to `YOURLS/user/plugins/`
 	- the following commands are run from `YOURLS` root folder. Eg, `/absolute/path/to/YOURLS`
 3. Install the plugin dependencies:
 
 	`composer --working-dir=user/plugins/iqrcodes install --no-dev --optimize-autoloader`
-4. Symlink or copy `qrchk.php` into the `pages` folder. Automation of this task is planned for a future release.
-    - Symlink:  
-	  `ln -s user/plugins/iqrcodes/assets/qrchk.php user/pages/qrchk.php`  
-    - Copy:  
-	  `cp user/plugins/iqrcodes/assets/qrchk.php user/pages/qrchk.php`
-5. Set permissions and cache
+4. Set permissions and cache
     -  There needs to be two cache folders (relative to YOURLS root)
        -  `user/plugins/iqrcodes/cache`   
        is included with the plugin download
-       -  `/path/to/U-SRV/cache/qr`   
-       iqrcodes will attempt to create this
-    - In case of failure just do somethign like the following (as root):
-      -  `mkdir /PATH/TO/U-SRV/CACHE/qr`
-      -  `chmod -R 777 /PATH/TO/U-SRV/CACHE`
-      -  `chown -R www-data:www-data /PATH/TO/U-SRV/CACHE`
+	- `/path/to/YOURLS_CACHE/iqrcodes` is created automatically and should be writable by the web server user.
       -  `chown -R www-data:www-data /PATH/TO/YOURLS/user/plugins/iqrcodes`
-6. Enable module, default config works fine, or visit IQRCodes page to fine tune.
-7. Have fun!
+5. Enable module, default config works fine, or visit IQRCodes page to fine tune.
+6. Have fun!
 
 ### Hint:
 Want to embed these QR codes into a worpress widget? Check out [this gist](https://gist.github.com/joshp23/3f990e6ec36e24ba53985968bbfa89f1)

@@ -70,16 +70,13 @@ function iqrcodes_do_page() {
 	}
 
 	$base = YOURLS_SITE;
-	$key  = iqrcodes_key();
-	$fn = 'qrc_' . md5($base . '/V') . "." . $opt[5];
-
 	$isLogo = glob ( $opt[10]."/logo.*");
 
 	if( isset($isLogo[1])) {
 		$logoIs = '<p style="color:red;">There is a problem with your setup, please use the reset option or re-upload your logo image file. If this does not fix the problem then you may have to check your cache location or folder permissions.</p>';
 	}
 	elseif( isset($isLogo[0])) {
-		$logoName  = $base . '/srv/?id=iqrcodes&key=' . $key . '&fn=logo.' . $opt[8];
+		$logoName  = 'data:image/' . $opt[8] . ';base64,' . base64_encode( file_get_contents( $isLogo[0] ) );
 		$logoIs = '<h4>Current Logo</h4><div style="width:128px;text-align:center"><img src="'.$logoName.'" style="-webkit-filter:drop-shadow(5px 5px 5px #222); filter:drop-shadow(5px 5px 5px #222); max-width:128px;"><hr></div>';
 	}
 	else {
@@ -97,44 +94,7 @@ echo <<<HTML
 				</ul>
 			</div>
 			<div id="stat_tab_options" class="tab">
-					<h3>U-SRV Checks</h3>
-					<p>Plugin: 
-HTML;
-	if(!(yourls_is_active_plugin('usrv/plugin.php'))) {
-		echo '<span style="font-weight:bold;color:red;">Missing!</span>This plugin depends on the <a href="https://github.com/joshp23/YOURLS-U-SRV" target="_blank">U-SRV</a> plugin, download and activate it before using this plugin.</p>';
-	} else {
-		echo '<span style="color:green;">Success</span>: U-SRV is installed and enabled.</p>';
-		echo '<p><code>srv.php</code> satus: ';
-
-		$srvLoc = YOURLS_ABSPATH.'/user/pages/srv.php';
-		if ( !file_exists( $srvLoc ) ) {
-	 		echo '<font color="red">srv.php is not in the "pages" directory!</font>';
-		} else { 
-			$pluginData = yourls_get_plugin_data( YOURLS_ABSPATH.'/user/plugins/usrv/plugin.php' );
-			$pluginVers = $pluginData['Version'];
-			$srvData = yourls_get_plugin_data( $srvLoc );
-			$servVers = $srvData['Version'];
-			$status = version_compare($pluginVers, $servVers);
-			switch ($status) {
-				case 1: echo '<font color="red">ERROR</font>: installed version in "pages" directory is outdated.'; break;
-				case 0: echo '<font color="green">Success</font>: installed and up to date.</font>'; break;
-				case -1: echo '<font color="blue">Dev</font>: installed and newer than plugin.</font>'; break;
-				default: echo '<font color="red">ERROR</font>: No info available, please check your installation';
-			}
-		}
-	}
-	echo <<<HTML
-				<hr>
 				<form method="post" enctype="multipart/form-data">
-					<h3>Cache Settings</h3>
-					<h4>Image Cache</h4>
-					<div style="padding-left: 10pt;">
-						<p><input type="text" size=25 name="iqrcodes_usrv_dir" value="$opt[0]" /></p>
-						<p>Current full path: <code>$opt[10]</code></p>
-						<p>Name the cache folder here, do not include a preceeding or trailing slash.</p>
-						<small>Hint:Change the parent cache location in the U-SRV settings.</small></p>
-					</div>
-
 					<h4>Cache Afterlife</h4>
 					<div style="padding-left: 10pt;">
 						<input type="hidden" name="iqrcodes_afterlife" value="preserve">
@@ -368,29 +328,10 @@ function iqrcodes_js($context) {
 // form handlers
 function iqrcodes_form_0() {
 	// check for POST: if one is set, they all are
-	if(isset($_POST['iqrcodes_usrv_dir'])) {
+	if(isset($_POST['iqrcodes_EC'])) {
 
 		yourls_verify_nonce( 'iqrcodes' );
-
-		// cache check, set, and update
-		$postCacheLoc = $_POST['iqrcodes_usrv_dir'];
-		$optsCacheLoc = yourls_get_option( 'iqrcodes_usrv_dir' );
-
-		$USRV_DIR = yourls_get_option('usrv_cache_loc');
-		if ($USRV_DIR == null) $USRV_DIR = dirname(YOURLS_ABSPATH)."/YOURLS_CACHE";
-		$postCacheLocFull = $USRV_DIR .'/'. $postCacheLoc;
-		$optsCacheLocFull = $USRV_DIR .'/'. $optsCacheLoc;
-
-		if ($postCacheLoc !== $optsCacheLoc ) {
-
-			if ($optsCacheLoc == null ) {
-				iqrcodes_mkdir( $postCacheLocFull );
-				yourls_update_option( 'iqrcodes_usrv_dir', $postCacheLoc);
-			} else {
-				iqrcodes_mvdir( $optsCacheLocFull , $postCacheLocFull );
-				yourls_update_option( 'iqrcodes_usrv_dir', $postCacheLoc );
-			}
-		}
+		$opt = iqrcodes_get_opts();
 
 		// standard option updates
 		yourls_update_option('iqrcodes_EC', $_POST['iqrcodes_EC']);
@@ -405,7 +346,7 @@ function iqrcodes_form_0() {
 			yourls_delete_option('iqrcodes_logo_file_type');
 			yourls_delete_option('iqrcodes_logo_scale');
 			yourls_delete_option('iqrcodes_logo_position');
-			iqrcodes_logo_mgr($postCacheLocFull, 'no');
+			iqrcodes_logo_mgr($opt[10], 'no');
 		}
 		elseif($_POST['iqrcodesLogoReset'] == 'preserve' ) {
 			yourls_update_option('iqrcodes_logo_do', $_POST['iqrcodes_logo_do']);
@@ -413,7 +354,7 @@ function iqrcodes_form_0() {
 			yourls_update_option('iqrcodes_logo_position', $_POST['iqrcodes_logo_position']);
 
 			if ( isset( $_FILES['iqrcodes_logo_file'] ) && ($_FILES['iqrcodes_logo_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE ) {
-				$logoType = iqrcodes_logo_mgr( $postCacheLocFull, $_FILES['iqrcodes_logo_file'] );
+				$logoType = iqrcodes_logo_mgr( $opt[10], $_FILES['iqrcodes_logo_file'] );
 				if ( $logoType !== false ) {
 					yourls_update_option( 'iqrcodes_logo_file_type', $logoType );
 				}
@@ -435,7 +376,6 @@ function iqrcodes_form_1() {
 function iqrcodes_get_opts() {
 
 	// Check DB
-	$QRC_DIR 	= yourls_get_option('iqrcodes_usrv_dir');
 	$EC 		= yourls_get_option('iqrcodes_EC');
 	$img_size 	= yourls_get_option('iqrcodes_img_size');
 	$bdr_size 	= yourls_get_option('iqrcodes_border_size');
@@ -445,11 +385,9 @@ function iqrcodes_get_opts() {
 	$logo_pos	= yourls_get_option('iqrcodes_logo_position');
 	$logo_ft	= yourls_get_option('iqrcodes_logo_file_type');
 	$logo_do	= yourls_get_option('iqrcodes_logo_do');
-	$USRV_DIR 	= yourls_get_option('usrv_cache_loc');
 	
 	// Set defaults
-	if ($QRC_DIR 	== null) $QRC_DIR		= 'qr';
-	if ($EC 		== null) $EC_LVL 		= 'H';
+	if ($EC 		== null) $EC 		= 'H';
 	if ($img_size 	== null) $img_size 		= '5';			// 165 X 165 (10 = 330 X 330)
 	if ($bdr_size 	== null) $bdr_size 		= '2';
 	if ($afterlife  == null) $afterlife		= 'preserve';
@@ -459,12 +397,11 @@ function iqrcodes_get_opts() {
 	if ($logo_ft 	== null) $logo_ft 		= 'png';
 	if ( !in_array( $logo_ft, array( 'jpg', 'png' ), true ) ) $logo_ft = 'png';
 	if ($logo_do 	== null) $logo_do 		= "no";
-	if ($USRV_DIR 	== null) $USRV_DIR		= dirname(YOURLS_ABSPATH)."/YOURLS_CACHE";
-							 $DIR_PATH 		= $USRV_DIR.'/'.$QRC_DIR;
+	$DIR_PATH = defined( 'IQRCODES_CACHE_DIR' ) ? IQRCODES_CACHE_DIR : dirname( rtrim( YOURLS_ABSPATH, '/' ) ) . '/YOURLS_CACHE/iqrcodes';
 	
 	// Return values
 	return array(
-		$QRC_DIR,	// opt[0]
+		'iqrcodes',	// opt[0]
 		$EC,		// opt[1]
 		$img_size,	// opt[2]
 		$bdr_size,	// opt[3]
@@ -478,11 +415,8 @@ function iqrcodes_get_opts() {
 	);
 }
 
-// Get key
-function iqrcodes_key() {
-	$now = round(time()/60);
-	$key = md5($now . 'iqrcodes');
-	return $key;
+function iqrcodes_qr_url( $shorturl ) {
+	return rtrim( $shorturl, '/' ) . '.qr';
 }
 
 //Generate QRCode for new url added.
@@ -490,7 +424,6 @@ yourls_add_filter( 'add_new_link', 'iqrcodes_add_url' );
 function iqrcodes_add_url( $data ) {
             
     $base = YOURLS_SITE;
-    $key  = iqrcodes_key();
     $opt  = iqrcodes_get_opts();
         
 	$shorturl = $data['shorturl'];
@@ -500,7 +433,7 @@ function iqrcodes_add_url( $data ) {
 	$filename = 'qrc_'. md5($shorturl) . "." . $opt[5];
 	$filepath = $opt[10]. '/' . $filename;
 	
-	$imgname  = $base . '/srv/?id=iqrcodes&key=' . $key . '&fn=' . $filename;
+	$imgname  = iqrcodes_qr_url( $shorturl );
 	
 	$data['qrcimg'] = $imgname;
 	
@@ -543,8 +476,7 @@ function iqrcodes_edit_url( $data ) {
 	$newfilename = 'qrc_' . md5($base . '/' . $newkeyword) . "." . $opt[5];
 	$newfilepath = $opt[10] . '/' . $newfilename;
 	
-	$key  = iqrcodes_key();
-	$imgname  = $base . '/srv/?id=iqrcodes&key=' . $key . '&fn=' . $newfilename;
+	$imgname  = iqrcodes_qr_url( $base . '/' . $newkeyword );
 
 	$data['qrcimg'] = $imgname;
 	
@@ -572,13 +504,6 @@ function iqrcodes_delete_url( $data ) {
 // Craete cache and check for dependencies on enable
 yourls_add_action('activated_iqrcodes/plugin.php', 'iqrcodes_activate');
 function iqrcodes_activate() {
-	if(!(yourls_is_active_plugin('usrv/plugin.php'))) {
-		die('
-			<div class="notice">
-				<p style="text-align:center;font-weight:bold;color:red;">This plugin depends on the <a href="https://github.com/joshp23/YOURLS-U-SRV" target="_blank">U-SRV</a> plugin, activate it first in the admin section.</p>
-			</div>'
-		);
-	}
 	if (!(function_exists('gd_info'))) {
 		die('
 			<div class="notice">
@@ -753,7 +678,6 @@ function iqrcode_dot_qr( $request ) {
                 if( yourls_is_shorturl( $keyword ) ) {
 
 					$shorturl 	= YOURLS_SITE.'/'.$keyword;
-					$key  		= iqrcodes_key();
 					$opt  		= iqrcodes_get_opts();
 
 					iqrcodes_mkdir( $opt[10] );
@@ -769,13 +693,10 @@ function iqrcode_dot_qr( $request ) {
 						}
 					}
 
-					$imgname  = $base . '/srv/?id=iqrcodes&key=' . $key . '&fn=' . $filename;
-					
-					yourls_add_filter ( 'redirect_code' , 'iqrcodes_redirect_code' );
-					function iqrcodes_redirect_code( $data ) {
-						return 302;
-					}
-					yourls_redirect( $imgname );
+					$contentTypes = array( 'png' => 'image/png', 'jpg' => 'image/jpeg', 'svg' => 'image/svg+xml' );
+					header( 'Content-Type: ' . $contentTypes[$opt[5]] );
+					header( 'Cache-Control: public, max-age=86400' );
+					readfile( $filepath );
 					exit;
                 }
         }

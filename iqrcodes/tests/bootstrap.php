@@ -5,7 +5,6 @@ define( 'YOURLS_SITE', 'https://sho.rt' );
 
 $GLOBALS['iqrcodes_test_root'] = sys_get_temp_dir() . '/iqrcodes-' . bin2hex( random_bytes( 8 ) );
 $GLOBALS['iqrcodes_test_options'] = array(
-	'iqrcodes_usrv_dir' => 'qr',
 	'iqrcodes_EC' => 'H',
 	'iqrcodes_img_size' => '5',
 	'iqrcodes_border_size' => '2',
@@ -15,8 +14,8 @@ $GLOBALS['iqrcodes_test_options'] = array(
 	'iqrcodes_logo_position' => 'center',
 	'iqrcodes_logo_file_type' => 'png',
 	'iqrcodes_logo_do' => 'no',
-	'usrv_cache_loc' => $GLOBALS['iqrcodes_test_root'],
 );
+define( 'IQRCODES_CACHE_DIR', $GLOBALS['iqrcodes_test_root'] . '/qr' );
 mkdir( $GLOBALS['iqrcodes_test_root'], 0700, true );
 
 class IQRCodesTestRedirect extends RuntimeException {}
