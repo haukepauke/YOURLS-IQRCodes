@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: gd, mbstring, dom, fileinfo
+          coverage: none
+      - run: composer --working-dir=iqrcodes install --no-dev --prefer-dist --no-progress
+      - run: php iqrcodes/tests/generate.php
+      - run: php iqrcodes/tests/qrchk.php
+      - run: php iqrcodes/tests/qr-route.php
