@@ -3,76 +3,94 @@ YOURLS Integrated QRCodes plugin with exposed options and full integration
 
 This is an updated fork of [Inline QRCode](http://techlister.com/plugins-2/qrcode-plugin-for-yourls/354/) which is more compact, configurable, and just as efficient with more features.
 
-## Requires:
-- PHP-GD on your system
-- YOURLS 1.7.9 +  
+## Requirements
+
+- YOURLS 1.9 or later
+- PHP 8.2 or later
+- PHP extensions: `gd`, `mbstring`, `dom`, and `fileinfo`
+- Composer 2 on a build or target host (see the no-Composer deployment option below)
 
 ## Features
-### Old
-* QRCodes are generated and cached for every new short url
-* A new QRCode is generated when a short url is edited
-* Cached QRCodes are deleted when its corresponding short url is deleted
-* QRCodes are displayed within the sharebox whenever the sharebox is displayed
-* QRCodes are generated for pre-existing shorturls when sharebox is displayed
-* Codes are generated from a standalone php based QRCode library
-  * No calls to google!
 
-### New
-* All options are available in the admin interface
-  * Code size
-  * Border width
-  * ECC level
-  * Image file type
-  * Optional logo watermark (image preview, scale, location on QR Code)
-  * Image cache location 
-  * Auto-delete or preserve cache on plugin deactivation
-* Scan the entire database at once and generate QR Codes for any short url that is found to be missing one
-* Plenty of well documented, practical examples in the options page to help get started with integration
-* QR code images are served directly from the corresponding `.qr` URL
-* Updated and minimized md5.js
-* Streamlined version of the QR Code generation library
-* Almost 1/2 the size of its predecessor
-  * This can halfed again by disabling and deleting the PHP QR Code cache, which was left in for enhanced performance. This setting can be found on lnie 100 of `assets/phpqrcode.php`
-* Append `.qr` to any short url to display qr code
+- Generates and caches QR codes for new, edited, existing, and requested short URLs.
+- Serves PNG, JPEG, or SVG from a stable URL: append `.qr` to a short URL, for
+  example `https://sho.rt/keyword.qr`.
+- Generates codes locally with `chillerlan/php-qrcode`; no external QR-code
+  service or YOURLS-U-SRV plugin is required.
+- Adds a QR-code image to the YOURLS share box and statistics pages.
+- Provides admin settings for size, border width, error-correction level, image
+  format, logo watermark, and cache cleanup when deactivating the plugin.
+- Can scan the database and generate missing QR-code cache files in bulk.
 
-## Installation
-1. Download and install YOURLS.
-2. Download the [latest release](https://github.com/joshp23/YOURLS-IQRCodes/releases/latest) of this repo and extract the `iqrcodes` folder to `YOURLS/user/plugins/`
-	- the following commands are run from `YOURLS` root folder. Eg, `/absolute/path/to/YOURLS`
-3. Install the plugin dependencies:
+## Install with YOURLS
 
-	`composer --working-dir=user/plugins/iqrcodes install --no-dev --optimize-autoloader`
-4. Set permissions and cache
-    -  There needs to be two cache folders (relative to YOURLS root)
-       -  `user/plugins/iqrcodes/cache`   
-       is included with the plugin download
-	- `/path/to/YOURLS_CACHE/iqrcodes` is created automatically and should be writable by the web server user.
-      -  `chown -R www-data:www-data /PATH/TO/YOURLS/user/plugins/iqrcodes`
-5. Enable module, default config works fine, or visit IQRCodes page to fine tune.
-6. Have fun!
+The following assumes a YOURLS installation at `/var/www/yourls`. Clone the
+repository outside the public plugin directory, then symlink its `iqrcodes`
+directory into YOURLS:
 
-### Hint:
-Want to embed these QR codes into a worpress widget? Check out [this gist](https://gist.github.com/joshp23/3f990e6ec36e24ba53985968bbfa89f1)
-### Note: 
-If you are using YOURLS with Nginx and using [this](https://github.com/YOURLS/YOURLS/wiki/Nginx-configuration) directive, you may end up with [404's instead of images](https://github.com/joshp23/YOURLS-IQRCodes/issues/21#issuecomment-326797121). You may want to have a look at [this](https://github.com/YOURLS/YOURLS/issues/1715#issuecomment-326797015) comment and thread. 
-
-If this becomes an issue, try changing
+```sh
+git clone https://github.com/haukepauke/YOURLS-IQRCodes.git /var/www/yourls/.yourls-iqrcodes
+composer --working-dir=/var/www/yourls/.yourls-iqrcodes/iqrcodes \
+  install --no-dev --prefer-dist --optimize-autoloader
+ln -s ../../.yourls-iqrcodes/iqrcodes /var/www/yourls/user/plugins/iqrcodes
 ```
-(try_files $uri $uri/ /yourls-loader.php;)
+
+`composer.lock` pins the exact dependency versions. Use `composer install`, not
+`composer update`, when deploying.
+
+Ensure the PHP-FPM/Apache user can create and write the private cache directory:
+
+```sh
+install -d -o www-data -g www-data -m 0750 /var/www/YOURLS_CACHE/iqrcodes
 ```
-to
+
+If your cache belongs elsewhere, set `IQRCODES_CACHE_DIR` in `user/config.php`:
+
+```php
+define('IQRCODES_CACHE_DIR', '/srv/yourls-cache/iqrcodes');
 ```
-if (!-e $request_filename){ rewrite ^(.+)$ /yourls-loader.php?q=$1 last; }
+
+Finally, enable **IQRCodes** in the YOURLS Plugins admin page. QR images are
+available at `https://sho.rt/keyword.qr`; no U-SRV plugin or extra YOURLS page is
+required.
+
+## Deploy when Composer is unavailable on the target
+
+Run Composer on a trusted build host with PHP 8.2 or later and the required
+extensions. Package the plugin directory *including* the generated `vendor/`
+directory, then copy that artifact to the target:
+
+```sh
+git clone https://github.com/haukepauke/YOURLS-IQRCodes.git build/YOURLS-IQRCodes
+composer --working-dir=build/YOURLS-IQRCodes/iqrcodes \
+  install --no-dev --prefer-dist --optimize-autoloader
+tar -C build/YOURLS-IQRCodes -czf iqrcodes-plugin.tar.gz iqrcodes
 ```
+
+Extract `iqrcodes-plugin.tar.gz` alongside the YOURLS installation and create
+the same `user/plugins/iqrcodes` symlink. Do not commit `vendor/` to this
+repository; it is a deployment artifact and is intentionally ignored by Git.
+
+## Web-server routing
+
+The `.qr` endpoint is handled by YOURLS, rather than a static file. Keep the
+standard YOURLS rewrite configuration so requests for paths that do not exist
+on disk reach `yourls-loader.php`. No separate `srv` endpoint or `qrchk.php`
+route is needed.
+
+To embed a QR code, use the short URL with `.qr` appended:
+
+```html
+<img src="https://sho.rt/keyword.qr" alt="QR code for https://sho.rt/keyword">
+```
+
 ## Credits
-[Inline QRcode](http://techlister.com/plugins-2/qrcode-plugin-for-yourls/354/) by Savoul Pelister is the base of this fork
 
-[PHP QR Code](http://phpqrcode.sourceforge.net/) by Dominik Dzienia (aka deltalab) generates the actual QR Codes
+[Inline QRcode](http://techlister.com/plugins-2/qrcode-plugin-for-yourls/354/) by Savoul Pelister is the base of this fork.
 
-[JavaScript MD5](https://blueimp.github.io/JavaScript-MD5/) by Sebastian Tschan (aka BlueImp) hashes the filenames in js
+[chillerlan/php-qrcode](https://github.com/chillerlan/php-qrcode) generates the QR codes.
 
-### Tips
-Dogecoin: DARhgg9q3HAWYZuN95DKnFonADrSWUimy3
+[YOURLS](https://yourls.org/) provides the URL-shortening platform.
 
 ===========================
 
