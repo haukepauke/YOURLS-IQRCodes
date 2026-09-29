@@ -9,7 +9,7 @@ function iqrcodes(url, site) {
 		$.ajax({
 			type: "POST",
 			url: base_url + '/qrchk',
-			data:{action:'qrchk', data: shorturl}
+		data:{action:'qrchk', data: shorturl, nonce: iqrcodes_nonce}
 		});
 
 		function getCookie(name) {

@@ -19,18 +19,32 @@
 // No direct call
 if( !defined( 'YOURLS_ABSPATH' ) ) die();
 
-if( ($_POST['action'] == 'qrchk') && isset($_POST['data']) && ($_POST['data'] !== null) ) {
+if( ($_POST['action'] ?? '') === 'qrchk' ) {
+	$nonce = $_POST['nonce'] ?? '';
+	yourls_verify_nonce( 'iqrcodes-qrchk', $nonce );
 
-	$data = $_POST['data'];
-	$shorturl = urldecode( $data );
+	$data = $_POST['data'] ?? null;
+	$prefix = rtrim( YOURLS_SITE, '/' ) . '/';
+	$shorturl = is_string( $data ) ? yourls_sanitize_url( $data ) : '';
+	$keyword = substr( $shorturl, strlen( $prefix ) );
+
+	if (
+		strlen( $shorturl ) > 2048
+		|| strpos( $shorturl, $prefix ) !== 0
+		|| $keyword === ''
+		|| $keyword !== yourls_sanitize_keyword( $keyword )
+		|| !yourls_is_shorturl( $keyword )
+	) {
+		http_response_code( 400 );
+		exit;
+	}
 
     $opt  = iqrcodes_get_opts();
 	$filename = '/qrc_' . md5($shorturl) . "." . $opt[5];
 	$filepath = $opt[10]. '/' . $filename;
 
-	if ( !file_exists( $filepath ) && $shorturl == !null ) {
+	if ( !file_exists( $filepath ) ) {
 		iqrcodes_mkdir( $opt[10] );
-		QRcode::{$opt[5]}( $shorturl, $filepath, $opt[1], $opt[2], $opt[3] );
 		if ( $opt[5] === 'svg' ) {
 			QRcode::{$opt[5]}( $shorturl, $filepath, $opt[1], $opt[2], $opt[3], 0xFFFFFF, 0x000000);
 		} else {

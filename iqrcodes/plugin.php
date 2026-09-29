@@ -203,8 +203,8 @@ HTML;
 					$logoIs
 					<h4>Upload Image</h4>
 					<div style="padding-left: 10pt;">
-						<input type="file" name="iqrcodes_logo_file" />
-					</div><p>Supported filetypes: jpg/png/svg</p><p>If you have issues with the logo, try converting your file to the default: png, before upload.</p><p> If there are still issues, try matching the qr code output image type to the logo file type, png is preferred.</p>
+						<input type="file" name="iqrcodes_logo_file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" />
+					</div><p>Supported filetypes: jpg/png (maximum 2 MB and 2048 × 2048 pixels).</p><p>If you have issues with the logo, try converting your file to the default: png, before upload.</p><p> If there are still issues, try matching the qr code output image type to the logo file type, png is preferred.</p>
 
 					<h4>Scaling</h4>
 					<div style="padding-left: 10pt;">
@@ -355,6 +355,7 @@ function iqrcodes_js($context) {
 		echo "\n<! --------------------------IQRCodes Start-------------------------- >\n";
 		echo "<script type=\"text/javascript\">\n";
 		echo "var YOURLS_SITE  = '".YOURLS_SITE."';\n";
+		echo "var iqrcodes_nonce = '".yourls_create_nonce( 'iqrcodes-qrchk' )."';\n";
 		echo "</script>\n";
 		echo "<script type=\"text/javascript\">var iqrcodes_imagetype=\"".$opt[5]."\";</script>\n";
 		echo "<script src=\"".$loc."/assets/md5.min.js?v=".$v."\" type=\"text/javascript\"></script>\n" ;
@@ -411,9 +412,12 @@ function iqrcodes_form_0() {
 			yourls_update_option('iqrcodes_logo_scale', $_POST['iqrcodes_logo_scale']);
 			yourls_update_option('iqrcodes_logo_position', $_POST['iqrcodes_logo_position']);
 
-			if(isset($_FILES['iqrcodes_logo_file']) 
-			&& in_array($_FILES['iqrcodes_logo_file']['type'], array("image/jpeg", "image/svg+xml", "image/png"))) 
-				iqrcodes_logo_mgr($postCacheLocFull, $_FILES['iqrcodes_logo_file']);
+			if ( isset( $_FILES['iqrcodes_logo_file'] ) && ($_FILES['iqrcodes_logo_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE ) {
+				$logoType = iqrcodes_logo_mgr( $postCacheLocFull, $_FILES['iqrcodes_logo_file'] );
+				if ( $logoType !== false ) {
+					yourls_update_option( 'iqrcodes_logo_file_type', $logoType );
+				}
+			}
 		}
 	}
 }
@@ -453,6 +457,7 @@ function iqrcodes_get_opts() {
 	if ($logo_scale	== null) $logo_scale 	= '0.25';
 	if ($logo_pos 	== null) $logo_pos 		= 'center';
 	if ($logo_ft 	== null) $logo_ft 		= 'png';
+	if ( !in_array( $logo_ft, array( 'jpg', 'png' ), true ) ) $logo_ft = 'png';
 	if ($logo_do 	== null) $logo_do 		= "no";
 	if ($USRV_DIR 	== null) $USRV_DIR		= dirname(YOURLS_ABSPATH)."/YOURLS_CACHE";
 							 $DIR_PATH 		= $USRV_DIR.'/'.$QRC_DIR;
@@ -632,17 +637,64 @@ function iqrcodes_mvdir( $old , $new ) {
 
 // logo file manager
 function iqrcodes_logo_mgr( $cache, $isNewLogo ) {
-	// remove old logo(s)
-	foreach (glob ( $cache."/logo.*") as $oldLogo) {
+	if ( $isNewLogo === 'no' ) {
+		foreach ( glob( $cache . '/logo.*' ) as $oldLogo ) {
+			if ( is_file( $oldLogo ) ) {
+				unlink( $oldLogo );
+			}
+		}
+		return true;
+	}
 
-		if ( file_exists( $oldLogo ))
+	if (
+		!is_array( $isNewLogo )
+		|| ($isNewLogo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK
+		|| !isset( $isNewLogo['tmp_name'], $isNewLogo['size'] )
+		|| !is_string( $isNewLogo['tmp_name'] )
+		|| !is_int( $isNewLogo['size'] )
+		|| $isNewLogo['size'] < 0
+		|| !is_uploaded_file( $isNewLogo['tmp_name'] )
+		|| $isNewLogo['size'] > 2 * 1024 * 1024
+	) {
+		return false;
+	}
+
+	$finfo = new finfo( FILEINFO_MIME_TYPE );
+	$mimeType = $finfo->file( $isNewLogo['tmp_name'] );
+	$extensions = array(
+		'image/jpeg' => 'jpg',
+		'image/png' => 'png',
+	);
+	$imageInfo = getimagesize( $isNewLogo['tmp_name'] );
+	if (
+		!isset( $extensions[$mimeType] )
+		|| $imageInfo === false
+		|| $imageInfo[0] < 1
+		|| $imageInfo[1] < 1
+		|| $imageInfo[0] > 2048
+		|| $imageInfo[1] > 2048
+	) {
+		return false;
+	}
+
+	$extension = $extensions[$mimeType];
+	$temporaryLogo = $cache . '/logo-upload-' . bin2hex( random_bytes( 16 ) ) . '.' . $extension;
+	if ( !move_uploaded_file( $isNewLogo['tmp_name'], $temporaryLogo ) ) {
+		return false;
+	}
+
+	foreach ( glob( $cache . '/logo.*' ) as $oldLogo ) {
+		if ( is_file( $oldLogo ) ) {
 			unlink( $oldLogo );
+		}
 	}
-	if( $isNewLogo !== 'no' ) {
-		$path_parts = pathinfo($isNewLogo['name']);
-		yourls_update_option( 'iqrcodes_logo_file_type', $path_parts['extension']);
-		move_uploaded_file($isNewLogo['tmp_name'], $cache."/logo.".$path_parts['extension']);
+
+	if ( !rename( $temporaryLogo, $cache . '/logo.' . $extension ) ) {
+		unlink( $temporaryLogo );
+		return false;
 	}
+
+	return $extension;
 }
 
 // Mass QR Check function
