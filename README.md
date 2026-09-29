@@ -40,12 +40,15 @@ This is an updated fork of [Inline QRCode](http://techlister.com/plugins-2/qrcod
 1. Download and install YOURLS and U-SRV. U-SRV will have created it's cache, within which will sit the IQRCodes's cache.
 2. Download the [latest release](https://github.com/joshp23/YOURLS-IQRCodes/releases/latest) of this repo and extract the `iqrcodes` folder to `YOURLS/user/plugins/`
 	- the following commands are run from `YOURLS` root folder. Eg, `/absolute/path/to/YOURLS`
-3. Symlink or copy `qrchk.php` into the `pages` folder. Automation of this task is planned for a future release.
+3. Install the plugin dependencies:
+
+	`composer --working-dir=user/plugins/iqrcodes install --no-dev --optimize-autoloader`
+4. Symlink or copy `qrchk.php` into the `pages` folder. Automation of this task is planned for a future release.
     - Symlink:  
 	  `ln -s user/plugins/iqrcodes/assets/qrchk.php user/pages/qrchk.php`  
     - Copy:  
 	  `cp user/plugins/iqrcodes/assets/qrchk.php user/pages/qrchk.php`
-3. Set permissions and cache
+5. Set permissions and cache
     -  There needs to be two cache folders (relative to YOURLS root)
        -  `user/plugins/iqrcodes/cache`   
        is included with the plugin download
@@ -56,8 +59,8 @@ This is an updated fork of [Inline QRCode](http://techlister.com/plugins-2/qrcod
       -  `chmod -R 777 /PATH/TO/U-SRV/CACHE`
       -  `chown -R www-data:www-data /PATH/TO/U-SRV/CACHE`
       -  `chown -R www-data:www-data /PATH/TO/YOURLS/user/plugins/iqrcodes`
-4. Enable module, default config works fine, or visit IQRCodes page to fine tune.
-5. Have fun!
+6. Enable module, default config works fine, or visit IQRCodes page to fine tune.
+7. Have fun!
 
 ### Hint:
 Want to embed these QR codes into a worpress widget? Check out [this gist](https://gist.github.com/joshp23/3f990e6ec36e24ba53985968bbfa89f1)
@@ -98,4 +101,3 @@ Dogecoin: DARhgg9q3HAWYZuN95DKnFonADrSWUimy3
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-

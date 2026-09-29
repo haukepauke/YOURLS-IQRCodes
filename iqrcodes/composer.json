@@ -1,0 +1,17 @@
+{
+    "name": "haukepauke/yourls-iqrcodes",
+    "description": "QR code generation for the YOURLS IQRCodes plugin",
+    "type": "yourls-plugin",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "php": "^8.2",
+        "ext-dom": "*",
+        "ext-fileinfo": "*",
+        "ext-gd": "*",
+        "ext-mbstring": "*",
+        "chillerlan/php-qrcode": "^6.0"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
