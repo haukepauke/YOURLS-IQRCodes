@@ -12,9 +12,8 @@ iqrcodes_test_assert( iqrcodes_qr_format( 'svg' ) === 'svg', 'SVG format was not
 iqrcodes_test_assert( iqrcodes_qr_format( 'gif' ) === 'png', 'Unsupported format did not use PNG default.' );
 iqrcodes_test_assert( iqrcodes_qr_url( 'https://sho.rt/abc', 'jpeg', true ) === 'https://sho.rt/abc.qr?format=jpeg&download=1', 'QR download URL is invalid.' );
 
-ob_start();
-iqrcodes_sharebox( '', 'https://sho.rt/abc', '', '' );
-$shareBox = ob_get_clean();
+$shareBoxData = iqrcodes_sharebox( array( 'shorturl' => 'https://sho.rt/abc', 'shortlink_title' => '' ) );
+$shareBox = $shareBoxData['shortlink_title'];
 iqrcodes_test_assert( strpos( $shareBox, 'Download:' ) !== false, 'Existing short URL share box does not offer downloads.' );
 iqrcodes_test_assert( strpos( $shareBox, 'format=png' ) !== false, 'Existing short URL share box does not use PNG for the preview.' );
 foreach ( array( 'png', 'jpeg', 'svg' ) as $format ) {

@@ -16,7 +16,7 @@ require_once( dirname(__FILE__).'/assets/phpqrcode.php' );
 
 // Add the admin page
 yourls_add_action( 'plugins_loaded', 'iqrcodes_add_page' );
-yourls_add_action( 'shareboxes_after', 'iqrcodes_sharebox', 10, 4 );
+yourls_add_filter( 'share_box_data', 'iqrcodes_sharebox' );
 function iqrcodes_add_page() {
         yourls_register_plugin_page( 'iqrcodes', 'IQRCodes', 'iqrcodes_do_page' );
 }
@@ -442,22 +442,26 @@ function iqrcodes_qr_url( $shorturl, $format = null, $download = false ) {
 	return $url . '?format=' . rawurlencode( iqrcodes_qr_format( $format ) ) . ( $download ? '&download=1' : '' );
 }
 
-function iqrcodes_sharebox( $longurl, $shorturl, $title, $text ) {
+function iqrcodes_sharebox( $data ) {
+	$shorturl = $data['shorturl'] ?? '';
 	if ( !is_string( $shorturl ) || $shorturl === '' ) {
-		return;
+		return $data;
 	}
 
 	$formats = iqrcodes_qr_formats();
 	$previewUrl = iqrcodes_qr_url( $shorturl, 'png' );
 
-	echo '<div id="qrcode" class="share">';
-	echo '<h3>QR Code</h3>';
-	echo '<img id="iqrcodes-image" src="' . yourls_esc_url( $previewUrl ) . '" alt="QR Code" width="100" height="100">';
-	echo '<p class="iqrcodes-download">Download: ';
+	$shareBox = '<div id="qrcode" class="share">';
+	$shareBox .= '<h3>QR Code</h3>';
+	$shareBox .= '<img id="iqrcodes-image" src="' . yourls_esc_url( $previewUrl ) . '" alt="QR Code" width="100" height="100">';
+	$shareBox .= '<p class="iqrcodes-download">Download: ';
 	foreach ( $formats as $format => $details ) {
-		echo '<a href="' . yourls_esc_url( iqrcodes_qr_url( $shorturl, $format, true ) ) . '" download>' . $details['label'] . '</a> ';
+		$shareBox .= '<a href="' . yourls_esc_url( iqrcodes_qr_url( $shorturl, $format, true ) ) . '" download>' . $details['label'] . '</a> ';
 	}
-	echo '</p></div>';
+	$shareBox .= '</p></div>';
+	$data['shortlink_title'] .= $shareBox;
+
+	return $data;
 }
 
 function iqrcodes_generate_qr( $shorturl, $format, $opt ) {
