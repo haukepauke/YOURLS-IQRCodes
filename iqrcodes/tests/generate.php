@@ -5,10 +5,18 @@ require __DIR__ . '/bootstrap.php';
 $cache = iqrcodes_test_cache_path();
 iqrcodes_mkdir( $cache );
 
-foreach ( array( 'png', 'jpg', 'svg' ) as $format ) {
-	$path = $cache . '/without-logo.' . $format;
-	QRcode::{$format}( 'https://sho.rt/abc', $path, 'H', 5, 2 );
+iqrcodes_test_assert( iqrcodes_qr_format( 'png' ) === 'png', 'PNG format was not accepted.' );
+iqrcodes_test_assert( iqrcodes_qr_format( 'jpeg' ) === 'jpeg', 'JPEG format was not accepted.' );
+iqrcodes_test_assert( iqrcodes_qr_format( 'jpg' ) === 'jpeg', 'JPG alias was not normalized to JPEG.' );
+iqrcodes_test_assert( iqrcodes_qr_format( 'svg' ) === 'svg', 'SVG format was not accepted.' );
+iqrcodes_test_assert( iqrcodes_qr_format( 'gif' ) === 'png', 'Unsupported format did not use PNG default.' );
+iqrcodes_test_assert( iqrcodes_qr_url( 'https://sho.rt/abc', 'jpeg', true ) === 'https://sho.rt/abc.qr?format=jpeg&download=1', 'QR download URL is invalid.' );
+
+foreach ( array( 'png' => 'png', 'jpeg' => 'jpg', 'svg' => 'svg' ) as $format => $extension ) {
+	$path = iqrcodes_generate_qr( 'https://sho.rt/abc', $format, iqrcodes_get_opts() );
+	iqrcodes_test_assert( $path === $cache . '/qrc_' . md5( 'https://sho.rt/abc' ) . '.' . $extension, strtoupper( $format ) . ' cache filename is invalid.' );
 	iqrcodes_test_assert( is_file( $path ) && filesize( $path ) > 0, strtoupper( $format ) . ' QR code was not created.' );
+	copy( $path, $cache . '/without-logo.' . $extension );
 }
 
 iqrcodes_test_assert( getimagesize( $cache . '/without-logo.png' )[2] === IMAGETYPE_PNG, 'PNG output is invalid.' );

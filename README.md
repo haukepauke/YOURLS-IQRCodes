@@ -14,7 +14,8 @@ This is an updated fork of [Inline QRCode](http://techlister.com/plugins-2/qrcod
 
 - Generates and caches QR codes for new, edited, existing, and requested short URLs.
 - Serves PNG, JPEG, or SVG from a stable URL: append `.qr` to a short URL, for
-  example `https://sho.rt/keyword.qr`.
+  example `https://sho.rt/keyword.qr`. Choose a format with `?format=png`,
+  `?format=jpeg`, or `?format=svg`.
 - Generates codes locally with `chillerlan/php-qrcode`; no external QR-code
   service or YOURLS-U-SRV plugin is required.
 - Adds a QR-code image to the YOURLS share box and statistics pages.
@@ -78,11 +79,18 @@ standard YOURLS rewrite configuration so requests for paths that do not exist
 on disk reach `yourls-loader.php`. No separate `srv` endpoint or `qrchk.php`
 route is needed.
 
-To embed a QR code, use the short URL with `.qr` appended:
+To embed a QR code, use the short URL with `.qr` appended. The configured
+default is used when no format is supplied; request any supported format with
+the `format` parameter:
 
 ```html
 <img src="https://sho.rt/keyword.qr" alt="QR code for https://sho.rt/keyword">
+<img src="https://sho.rt/keyword.qr?format=svg" alt="SVG QR code for https://sho.rt/keyword">
 ```
+
+Append `&download=1` to request a download, for example
+`https://sho.rt/keyword.qr?format=jpeg&download=1`. The QR-code share box
+includes a format selector and a download link for this purpose.
 
 ## Credits
 

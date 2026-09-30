@@ -3,3 +3,11 @@ DIV.share
 	margin-right: 0.2em !important;
 	padding: 0 5px 10px !important;
 }
+
+#qrcode .iqrcodes-download {
+	margin-top: 0.5em;
+}
+
+#qrcode .iqrcodes-download select {
+	margin-right: 0.5em;
+}

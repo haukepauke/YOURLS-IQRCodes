@@ -3,7 +3,7 @@
 Plugin Name: IQRCodes
 Plugin URI: https://github.com/joshp23/YOURLS-IQRCodes
 Description: Integrated QR Codes
-Version: 2.3.1
+Version: 2.4.0
 Author: Josh Panter
 Author URI: https://unfettered.net
 */
@@ -415,8 +415,46 @@ function iqrcodes_get_opts() {
 	);
 }
 
-function iqrcodes_qr_url( $shorturl ) {
-	return rtrim( $shorturl, '/' ) . '.qr';
+function iqrcodes_qr_formats() {
+	return array(
+		'png' => array( 'extension' => 'png', 'content_type' => 'image/png', 'label' => 'PNG' ),
+		'jpeg' => array( 'extension' => 'jpg', 'content_type' => 'image/jpeg', 'label' => 'JPEG' ),
+		'svg' => array( 'extension' => 'svg', 'content_type' => 'image/svg+xml', 'label' => 'SVG' ),
+	);
+}
+
+function iqrcodes_qr_format( $format, $default = 'png' ) {
+	$formats = iqrcodes_qr_formats();
+	if ( $format === 'jpg' ) {
+		$format = 'jpeg';
+	}
+
+	return is_string( $format ) && isset( $formats[$format] ) ? $format : $default;
+}
+
+function iqrcodes_qr_url( $shorturl, $format = null, $download = false ) {
+	$url = rtrim( $shorturl, '/' ) . '.qr';
+	if ( $format === null ) {
+		return $url;
+	}
+
+	return $url . '?format=' . rawurlencode( iqrcodes_qr_format( $format ) ) . ( $download ? '&download=1' : '' );
+}
+
+function iqrcodes_generate_qr( $shorturl, $format, $opt ) {
+	$formats = iqrcodes_qr_formats();
+	$format = iqrcodes_qr_format( $format );
+	$filepath = $opt[10] . '/qrc_' . md5( $shorturl ) . '.' . $formats[$format]['extension'];
+
+	if ( !file_exists( $filepath ) ) {
+		if ( $format === 'svg' ) {
+			QRcode::svg( $shorturl, $filepath, $opt[1], $opt[2], $opt[3], 0xFFFFFF, 0x000000 );
+		} else {
+			QRcode::{$formats[$format]['extension']}( $shorturl, $filepath, $opt[1], $opt[2], $opt[3] );
+		}
+	}
+
+	return $filepath;
 }
 
 //Generate QRCode for new url added.
@@ -682,20 +720,16 @@ function iqrcode_dot_qr( $request ) {
 
 					iqrcodes_mkdir( $opt[10] );
 
-					$filename = 'qrc_'. md5($shorturl) . "." . $opt[5];
-					$filepath = $opt[10]. '/' . $filename;
+					$requestedFormat = $_GET['format'] ?? $opt[5];
+					$format = iqrcodes_qr_format( is_string( $requestedFormat ) ? $requestedFormat : $opt[5], iqrcodes_qr_format( $opt[5] ) );
+					$formats = iqrcodes_qr_formats();
+					$filepath = iqrcodes_generate_qr( $shorturl, $format, $opt );
 
-					if ( !file_exists( $filepath ) ) {
-						if ( $opt[5] === 'svg' ) {
-							QRcode::{$opt[5]}( $shorturl, $filepath, $opt[1], $opt[2], $opt[3], 0xFFFFFF, 0x000000);
-						} else {
-							QRcode::{$opt[5]}( $shorturl, $filepath, $opt[1], $opt[2], $opt[3] );
-						}
-					}
-
-					$contentTypes = array( 'png' => 'image/png', 'jpg' => 'image/jpeg', 'svg' => 'image/svg+xml' );
-					header( 'Content-Type: ' . $contentTypes[$opt[5]] );
+					header( 'Content-Type: ' . $formats[$format]['content_type'] );
 					header( 'Cache-Control: public, max-age=86400' );
+					if ( isset( $_GET['download'] ) && $_GET['download'] === '1' ) {
+						header( 'Content-Disposition: attachment; filename="' . $keyword . '-qr-code.' . $formats[$format]['extension'] . '"' );
+					}
 					readfile( $filepath );
 					exit;
                 }
