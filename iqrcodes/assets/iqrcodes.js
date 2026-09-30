@@ -3,49 +3,31 @@ function iqrcodes(url) {
 	if (!shorturl) {
 		return;
 	}
+	if ($('#qrcode').length) {
+		return;
+	}
 
 	var qrurl = shorturl.replace(/\/$/, '') + '.qr';
+	var formatUrl = function (format, download) {
+		return qrurl + '?format=' + encodeURIComponent(format) + (download ? '&download=1' : '');
+	};
+	$('#qrcode').remove();
+	var image = $('<img>', { id: 'iqrcodes-image', src: formatUrl('png'), alt: 'QR Code' }).css({ width: '100px', height: '100px' });
+	var downloads = $('<p>', { 'class': 'iqrcodes-download' }).append('Download: ');
 	var formats = [
 		{ value: 'png', label: 'PNG' },
 		{ value: 'jpeg', label: 'JPEG' },
 		{ value: 'svg', label: 'SVG' }
 	];
-	var selectedFormat = typeof iqrcodes_imagetype === 'string' ? iqrcodes_imagetype : 'png';
-	if (selectedFormat === 'jpg') {
-		selectedFormat = 'jpeg';
-	}
-	if (selectedFormat !== 'png' && selectedFormat !== 'jpeg' && selectedFormat !== 'svg') {
-		selectedFormat = 'png';
-	}
-	var formatUrl = function (format, download) {
-		return qrurl + '?format=' + encodeURIComponent(format) + (download ? '&download=1' : '');
-	};
-	$('#qrcode').remove();
-	var formatSelect = $('<select>', { id: 'iqrcodes-format', 'aria-label': 'QR code format' });
 	for (var i = 0; i < formats.length; i++) {
 		var format = formats[i];
-		var option = $('<option>', { value: format.value }).text(format.label);
-		if (format.value === selectedFormat) {
-			option.prop('selected', true);
-		}
-		formatSelect.append(option);
+		downloads.append($('<a>', { text: format.label }).attr({ href: formatUrl(format.value, true), download: '' }));
 	}
-	var image = $('<img>', { id: 'iqrcodes-image', src: formatUrl(selectedFormat), alt: 'QR Code' }).css({ width: '100px', height: '100px' });
-	var download = $('<a>', { id: 'iqrcodes-download', text: 'Download ' + selectedFormat.toUpperCase() }).attr({ href: formatUrl(selectedFormat, true), download: '' });
-	formatSelect.on('change', function () {
-		var format = $(this).val();
-		image.attr('src', formatUrl(format));
-		download.attr('href', formatUrl(format, true)).text('Download ' + format.toUpperCase());
-	});
 	$('#shareboxes').append(
 		$('<div>', { id: 'qrcode', 'class': 'share' })
 			.append($('<h3>').text('QR Code'))
 			.append(image)
-			.append($('<div>', { 'class': 'iqrcodes-download' })
-				.append($('<label>', { 'for': 'iqrcodes-format' }).text('Format: '))
-				.append(formatSelect)
-				.append($('<br>'))
-				.append(download))
+			.append(downloads)
 	);
 }
 

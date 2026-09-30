@@ -3,7 +3,7 @@
 Plugin Name: IQRCodes
 Plugin URI: https://github.com/joshp23/YOURLS-IQRCodes
 Description: Integrated QR Codes
-Version: 2.4.1
+Version: 2.4.2
 Author: Josh Panter
 Author URI: https://unfettered.net
 */
@@ -16,6 +16,7 @@ require_once( dirname(__FILE__).'/assets/phpqrcode.php' );
 
 // Add the admin page
 yourls_add_action( 'plugins_loaded', 'iqrcodes_add_page' );
+yourls_add_action( 'shareboxes_after', 'iqrcodes_sharebox', 10, 4 );
 function iqrcodes_add_page() {
         yourls_register_plugin_page( 'iqrcodes', 'IQRCodes', 'iqrcodes_do_page' );
 }
@@ -441,6 +442,24 @@ function iqrcodes_qr_url( $shorturl, $format = null, $download = false ) {
 	return $url . '?format=' . rawurlencode( iqrcodes_qr_format( $format ) ) . ( $download ? '&download=1' : '' );
 }
 
+function iqrcodes_sharebox( $longurl, $shorturl, $title, $text ) {
+	if ( !is_string( $shorturl ) || $shorturl === '' ) {
+		return;
+	}
+
+	$formats = iqrcodes_qr_formats();
+	$previewUrl = iqrcodes_qr_url( $shorturl, 'png' );
+
+	echo '<div id="qrcode" class="share">';
+	echo '<h3>QR Code</h3>';
+	echo '<img id="iqrcodes-image" src="' . yourls_esc_url( $previewUrl ) . '" alt="QR Code" width="100" height="100">';
+	echo '<p class="iqrcodes-download">Download: ';
+	foreach ( $formats as $format => $details ) {
+		echo '<a href="' . yourls_esc_url( iqrcodes_qr_url( $shorturl, $format, true ) ) . '" download>' . $details['label'] . '</a> ';
+	}
+	echo '</p></div>';
+}
+
 function iqrcodes_generate_qr( $shorturl, $format, $opt ) {
 	$formats = iqrcodes_qr_formats();
 	$format = iqrcodes_qr_format( $format );
@@ -704,34 +723,46 @@ function iqrcodes_mass_chk() {
 }
 
 yourls_add_action( 'pre_load_template', 'iqrcode_dot_qr' );
+function iqrcodes_qr_keyword_from_request( $request ) {
+	if ( is_array( $request ) ) {
+		$request = reset( $request );
+	}
+	if ( !is_string( $request ) ) {
+		return false;
+	}
+
+	$request = strtok( $request, '?' );
+	if ( $request === false ) {
+		return false;
+	}
+	$pattern = yourls_make_regexp_pattern( yourls_get_shorturl_charset() );
+	if ( !preg_match( "@^([$pattern]+)\\.qr/?$@", $request, $matches ) ) {
+		return false;
+	}
+
+	return yourls_sanitize_keyword( $matches[1] );
+}
+
 function iqrcode_dot_qr( $request ) {
-		$base = YOURLS_SITE;
-        // Get authorized charset in keywords and make a regexp pattern
-        $pattern = yourls_make_regexp_pattern( yourls_get_shorturl_charset() );
-        
-        // Shorturl is like bleh.qr?
-        if( preg_match( "@^([$pattern]+)\.qr?/?$@", $request[0], $matches ) ) {
-                // this shorturl exists?
-                $keyword = yourls_sanitize_keyword( $matches[1] );
-                if( yourls_is_shorturl( $keyword ) ) {
+	$keyword = iqrcodes_qr_keyword_from_request( $request );
+	if ( $keyword !== false && yourls_is_shorturl( $keyword ) ) {
 
-					$shorturl 	= YOURLS_SITE.'/'.$keyword;
-					$opt  		= iqrcodes_get_opts();
+		$shorturl 	= YOURLS_SITE.'/'.$keyword;
+		$opt  		= iqrcodes_get_opts();
 
-					iqrcodes_mkdir( $opt[10] );
+		iqrcodes_mkdir( $opt[10] );
 
-					$requestedFormat = $_GET['format'] ?? $opt[5];
-					$format = iqrcodes_qr_format( is_string( $requestedFormat ) ? $requestedFormat : $opt[5], iqrcodes_qr_format( $opt[5] ) );
-					$formats = iqrcodes_qr_formats();
-					$filepath = iqrcodes_generate_qr( $shorturl, $format, $opt );
+		$requestedFormat = $_GET['format'] ?? $opt[5];
+		$format = iqrcodes_qr_format( is_string( $requestedFormat ) ? $requestedFormat : $opt[5], iqrcodes_qr_format( $opt[5] ) );
+		$formats = iqrcodes_qr_formats();
+		$filepath = iqrcodes_generate_qr( $shorturl, $format, $opt );
 
-					header( 'Content-Type: ' . $formats[$format]['content_type'] );
-					header( 'Cache-Control: public, max-age=86400' );
-					if ( isset( $_GET['download'] ) && $_GET['download'] === '1' ) {
-						header( 'Content-Disposition: attachment; filename="' . $keyword . '-qr-code.' . $formats[$format]['extension'] . '"' );
-					}
-					readfile( $filepath );
-					exit;
-                }
-        }
+		header( 'Content-Type: ' . $formats[$format]['content_type'] );
+		header( 'Cache-Control: public, max-age=86400' );
+		if ( isset( $_GET['download'] ) && $_GET['download'] === '1' ) {
+			header( 'Content-Disposition: attachment; filename="' . $keyword . '-qr-code.' . $formats[$format]['extension'] . '"' );
+		}
+		readfile( $filepath );
+		exit;
+	}
 }

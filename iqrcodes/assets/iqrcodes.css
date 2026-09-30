@@ -8,6 +8,6 @@ DIV.share
 	margin-top: 0.5em;
 }
 
-#qrcode .iqrcodes-download select {
-	margin-right: 0.5em;
+#qrcode .iqrcodes-download a {
+	margin-right: 0.35em;
 }

@@ -28,6 +28,7 @@ function yourls_delete_option( $name ) { unset( $GLOBALS['iqrcodes_test_options'
 function yourls_create_nonce( $action ) { return 'test-nonce'; }
 function yourls_verify_nonce( $action, $nonce = false ) { iqrcodes_test_assert( $action === 'iqrcodes-qrchk' && $nonce === 'test-nonce', 'Unexpected nonce.' ); }
 function yourls_sanitize_url( $url ) { return $url; }
+function yourls_esc_url( $url ) { return $url; }
 function yourls_sanitize_keyword( $keyword ) { return preg_replace( '/[^a-z0-9]/', '', $keyword ); }
 function yourls_is_shorturl( $keyword ) { return $keyword === 'abc'; }
 function yourls_make_regexp_pattern( $charset ) { return $charset; }
