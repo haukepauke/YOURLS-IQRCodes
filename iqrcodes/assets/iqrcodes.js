@@ -10,8 +10,11 @@ function iqrcodes(url) {
 		{ value: 'jpeg', label: 'JPEG' },
 		{ value: 'svg', label: 'SVG' }
 	];
-	var selectedFormat = iqrcodes_imagetype === 'jpg' ? 'jpeg' : iqrcodes_imagetype;
-	if (!formats.some(function (format) { return format.value === selectedFormat; })) {
+	var selectedFormat = typeof iqrcodes_imagetype === 'string' ? iqrcodes_imagetype : 'png';
+	if (selectedFormat === 'jpg') {
+		selectedFormat = 'jpeg';
+	}
+	if (selectedFormat !== 'png' && selectedFormat !== 'jpeg' && selectedFormat !== 'svg') {
 		selectedFormat = 'png';
 	}
 	var formatUrl = function (format, download) {
@@ -19,11 +22,16 @@ function iqrcodes(url) {
 	};
 	$('#qrcode').remove();
 	var formatSelect = $('<select>', { id: 'iqrcodes-format', 'aria-label': 'QR code format' });
-	formats.forEach(function (format) {
-		formatSelect.append($('<option>', { value: format.value, text: format.label, selected: format.value === selectedFormat }));
-	});
+	for (var i = 0; i < formats.length; i++) {
+		var format = formats[i];
+		var option = $('<option>', { value: format.value }).text(format.label);
+		if (format.value === selectedFormat) {
+			option.prop('selected', true);
+		}
+		formatSelect.append(option);
+	}
 	var image = $('<img>', { id: 'iqrcodes-image', src: formatUrl(selectedFormat), alt: 'QR Code' }).css({ width: '100px', height: '100px' });
-	var download = $('<a>', { id: 'iqrcodes-download', text: 'Download ' + selectedFormat.toUpperCase(), download: '' }).attr('href', formatUrl(selectedFormat, true));
+	var download = $('<a>', { id: 'iqrcodes-download', text: 'Download ' + selectedFormat.toUpperCase() }).attr({ href: formatUrl(selectedFormat, true), download: '' });
 	formatSelect.on('change', function () {
 		var format = $(this).val();
 		image.attr('src', formatUrl(format));
@@ -34,7 +42,9 @@ function iqrcodes(url) {
 			.append($('<h3>').text('QR Code'))
 			.append(image)
 			.append($('<div>', { 'class': 'iqrcodes-download' })
+				.append($('<label>', { 'for': 'iqrcodes-format' }).text('Format: '))
 				.append(formatSelect)
+				.append($('<br>'))
 				.append(download))
 	);
 }
