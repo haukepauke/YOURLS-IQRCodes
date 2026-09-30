@@ -1,38 +1,40 @@
-function iqrcodes(url) {
-	var shorturl = url || $('#copylink').val();
+function iqrcodes(shorturl) {
+	shorturl = shorturl || $('#copylink').val();
 	if (!shorturl) {
-		return;
-	}
-	if ($('#qrcode').length) {
 		return;
 	}
 
 	var qrurl = shorturl.replace(/\/$/, '') + '.qr';
-	var formatUrl = function (format, download) {
-		return qrurl + '?format=' + encodeURIComponent(format) + (download ? '&download=1' : '');
-	};
-	$('#qrcode').remove();
-	var image = $('<img>', { id: 'iqrcodes-image', src: formatUrl('png'), alt: 'QR Code' }).css({ width: '100px', height: '100px' });
-	var downloads = $('<p>', { 'class': 'iqrcodes-download' }).append('Download: ');
-	var formats = [
-		{ value: 'png', label: 'PNG' },
-		{ value: 'jpeg', label: 'JPEG' },
-		{ value: 'svg', label: 'SVG' }
-	];
+	var panel = $('#qrcode');
+	if (!panel.length) {
+		panel = $('<div>', { id: 'qrcode', 'class': 'iqrcodes-panel' })
+			.append($('<h3>').text('QR Code'))
+			.append($('<img>', { id: 'iqrcodes-image', alt: 'QR Code', width: 100, height: 100 }))
+			.append($('<p>', { 'class': 'iqrcodes-download' }).text('Download: '));
+		$('#sharebox').append(panel);
+	}
+
+	$('#iqrcodes-image').attr('src', qrurl + '?format=png');
+	var downloads = panel.find('.iqrcodes-download').empty().text('Download: ');
+	var formats = ['png', 'jpeg', 'svg'];
 	for (var i = 0; i < formats.length; i++) {
 		var format = formats[i];
-		downloads.append($('<a>', { text: format.label }).attr({ href: formatUrl(format.value, true), download: '' }));
+		downloads.append($('<a>', { text: format.toUpperCase() }).attr({
+			href: qrurl + '?format=' + format + '&download=1',
+			download: '',
+			target: '_blank',
+			rel: 'noopener noreferrer'
+		}));
 	}
-	$('#shareboxes').append(
-		$('<div>', { id: 'qrcode', 'class': 'share' })
-			.append($('<h3>').text('QR Code'))
-			.append(image)
-			.append(downloads)
-	);
 }
 
 $(document).ready(function () {
-	$('.button_share').click(function () { iqrcodes(); });
-	$('a[href="#stat_tab_share"]').click(function () { iqrcodes(); });
+	$(document).on('click', 'a[id^="share-button-"]', function () { iqrcodes(); });
+	$('a[href="#stat_tab_share"]').on('click', function () { iqrcodes(); });
+	$(document).ajaxSuccess(function (event, xhr, settings, data) {
+		if (data && data.status === 'success' && data.shorturl) {
+			iqrcodes(data.shorturl);
+		}
+	});
 	iqrcodes();
 });

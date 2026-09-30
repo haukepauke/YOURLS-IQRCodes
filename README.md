@@ -18,7 +18,8 @@ This is an updated fork of [Inline QRCode](http://techlister.com/plugins-2/qrcod
   `?format=jpeg`, or `?format=svg`.
 - Generates codes locally with `chillerlan/php-qrcode`; no external QR-code
   service or YOURLS-U-SRV plugin is required.
-- Adds a QR-code image to the YOURLS share box and statistics pages.
+- Shows a PNG QR-code preview and PNG, JPEG, and SVG download links in the
+  Share box for both existing and newly created short URLs.
 - Provides admin settings for size, border width, error-correction level, image
   format, logo watermark, and cache cleanup when deactivating the plugin.
 - Can scan the database and generate missing QR-code cache files in bulk.
@@ -89,8 +90,8 @@ the `format` parameter:
 ```
 
 Append `&download=1` to request a download, for example
-`https://sho.rt/keyword.qr?format=jpeg&download=1`. The QR-code share box
-includes a format selector and a download link for this purpose.
+`https://sho.rt/keyword.qr?format=jpeg&download=1`. The Share box always
+previews PNG and offers direct download links for all three formats.
 
 ## Credits
 

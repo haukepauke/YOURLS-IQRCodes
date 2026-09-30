@@ -20,4 +20,5 @@ jobs:
           coverage: none
       - run: composer --working-dir=iqrcodes install --no-dev --prefer-dist --no-progress
       - run: php iqrcodes/tests/generate.php
+      - run: php iqrcodes/tests/share-box.php
       - run: php iqrcodes/tests/qr-route.php > /tmp/iqrcodes-route && test -s /tmp/iqrcodes-route

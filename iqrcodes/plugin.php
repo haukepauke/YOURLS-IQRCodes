@@ -3,7 +3,7 @@
 Plugin Name: IQRCodes
 Plugin URI: https://github.com/joshp23/YOURLS-IQRCodes
 Description: Integrated QR Codes
-Version: 2.4.3
+Version: 2.4.4
 Author: Josh Panter
 Author URI: https://unfettered.net
 */
@@ -306,7 +306,6 @@ function iqrcodes_js($context) {
 		echo "<link rel=\"stylesheet\" href=\"".$home."/css/infos.css?v=".YOURLS_VERSION."\" type=\"text/css\" media=\"screen\" />\n";
 		echo "<script src=\"".$home."/js/infos.js?v=".YOURLS_VERSION."\" type=\"text/javascript\"></script>\n";
 	} elseif( !preg_match('/plugin.*/', $context[0] )) { 
-		$opt = iqrcodes_get_opts();
 		// The plugin may be installed through a symlink, so derive asset URLs from
 		// its public YOURLS plugin path rather than this file's resolved location.
 		$loc = YOURLS_PLUGINURL . '/iqrcodes';
@@ -316,10 +315,7 @@ function iqrcodes_js($context) {
 		echo "\n<! --------------------------IQRCodes Start-------------------------- >\n";
 		echo "<script type=\"text/javascript\">\n";
 		echo "var YOURLS_SITE  = '".YOURLS_SITE."';\n";
-		echo "var iqrcodes_nonce = '".yourls_create_nonce( 'iqrcodes-qrchk' )."';\n";
 		echo "</script>\n";
-		echo "<script type=\"text/javascript\">var iqrcodes_imagetype=\"".$opt[5]."\";</script>\n";
-		echo "<script src=\"".$loc."/assets/md5.min.js?v=".$v."\" type=\"text/javascript\"></script>\n" ;
 		echo "<script src=\"".$loc."/assets/iqrcodes.js?v=".$v."\" type=\"text/javascript\"></script>\n" ;
 		echo "<link rel=\"stylesheet\" href=\"".$loc."/assets/iqrcodes.css?v=".$v."\" type=\"text/css\" />\n";
 		echo "<! --------------------------IQRCodes END---------------------------- >\n";
@@ -451,15 +447,15 @@ function iqrcodes_sharebox( $data ) {
 	$formats = iqrcodes_qr_formats();
 	$previewUrl = iqrcodes_qr_url( $shorturl, 'png' );
 
-	$shareBox = '<div id="qrcode" class="share">';
+	$shareBox = '<div id="qrcode" class="iqrcodes-panel">';
 	$shareBox .= '<h3>QR Code</h3>';
 	$shareBox .= '<img id="iqrcodes-image" src="' . yourls_esc_url( $previewUrl ) . '" alt="QR Code" width="100" height="100">';
 	$shareBox .= '<p class="iqrcodes-download">Download: ';
 	foreach ( $formats as $format => $details ) {
-		$shareBox .= '<a href="' . yourls_esc_url( iqrcodes_qr_url( $shorturl, $format, true ) ) . '" download>' . $details['label'] . '</a> ';
+		$shareBox .= '<a href="' . yourls_esc_url( iqrcodes_qr_url( $shorturl, $format, true ) ) . '" download target="_blank" rel="noopener noreferrer">' . $details['label'] . '</a> ';
 	}
 	$shareBox .= '</p></div>';
-	$data['shortlink_title'] .= $shareBox;
+	$data['share_title'] .= $shareBox;
 
 	return $data;
 }
@@ -484,7 +480,6 @@ function iqrcodes_generate_qr( $shorturl, $format, $opt ) {
 yourls_add_filter( 'add_new_link', 'iqrcodes_add_url' );
 function iqrcodes_add_url( $data ) {
             
-    $base = YOURLS_SITE;
     $opt  = iqrcodes_get_opts();
         
 	$shorturl = $data['shorturl'];
@@ -504,15 +499,6 @@ function iqrcodes_add_url( $data ) {
 			QRcode::{$opt[5]}( $shorturl, $filepath, $opt[1], $opt[2], $opt[3] );
 		}
 	
-	if( !yourls_is_API() ) {
-		// required for direct call to yourls_add_new_link() which does not fire the javascript - lets do it manually
-		if ( isset( $data['html'] ) ) { 
-			$data['html'] .= "<script>iqrcodes( '$imgname' , '$base' );</script>";
-		} else {
-			$data['html'] = "<script>iqrcodes( '$imgname' , '$base' );</script>";
-		}
-	
-	}			
 	return $data;
 }
 

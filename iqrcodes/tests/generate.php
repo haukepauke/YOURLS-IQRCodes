@@ -12,14 +12,6 @@ iqrcodes_test_assert( iqrcodes_qr_format( 'svg' ) === 'svg', 'SVG format was not
 iqrcodes_test_assert( iqrcodes_qr_format( 'gif' ) === 'png', 'Unsupported format did not use PNG default.' );
 iqrcodes_test_assert( iqrcodes_qr_url( 'https://sho.rt/abc', 'jpeg', true ) === 'https://sho.rt/abc.qr?format=jpeg&download=1', 'QR download URL is invalid.' );
 
-$shareBoxData = iqrcodes_sharebox( array( 'shorturl' => 'https://sho.rt/abc', 'shortlink_title' => '' ) );
-$shareBox = $shareBoxData['shortlink_title'];
-iqrcodes_test_assert( strpos( $shareBox, 'Download:' ) !== false, 'Existing short URL share box does not offer downloads.' );
-iqrcodes_test_assert( strpos( $shareBox, 'format=png' ) !== false, 'Existing short URL share box does not use PNG for the preview.' );
-foreach ( array( 'png', 'jpeg', 'svg' ) as $format ) {
-	iqrcodes_test_assert( strpos( $shareBox, 'format=' . $format . '&download=1' ) !== false, strtoupper( $format ) . ' download is missing from existing short URL share box.' );
-}
-
 foreach ( array( 'png' => 'png', 'jpeg' => 'jpg', 'svg' => 'svg' ) as $format => $extension ) {
 	$path = iqrcodes_generate_qr( 'https://sho.rt/abc', $format, iqrcodes_get_opts() );
 	iqrcodes_test_assert( $path === $cache . '/qrc_' . md5( 'https://sho.rt/abc' ) . '.' . $extension, strtoupper( $format ) . ' cache filename is invalid.' );

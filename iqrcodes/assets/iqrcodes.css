@@ -4,6 +4,18 @@ DIV.share
 	padding: 0 5px 10px !important;
 }
 
+#sharebox {
+	height: auto;
+}
+
+#qrcode {
+	margin-top: 0.75em;
+}
+
+#qrcode #iqrcodes-image {
+	display: block;
+}
+
 #qrcode .iqrcodes-download {
 	margin-top: 0.5em;
 }
